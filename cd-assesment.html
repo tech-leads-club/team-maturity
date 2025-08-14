@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Checklist de Continuous Delivery - Autoavaliação</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #111827;
+      --muted: #94a3b8;
+      --text: #e5e7eb;
+      --accent: #60a5fa;
+      --accent-2: #34d399;
+      --danger: #f87171;
+      --warning: #fbbf24;
+      --ok: #4ade80;
+      --border: #1f2937;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 0 0 60px 0;
+      line-height: 1.45;
+    }
+    header {
+      padding: 28px 18px 8px 18px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0));
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .wrap { max-width: 980px; margin: 0 auto; }
+    h1 { margin: 0 0 6px 0; font-size: 24px; letter-spacing: 0.2px; }
+    p.subtitle { margin: 0; color: var(--muted); font-size: 14px; }
+    .summary {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin: 18px 0 8px;
+      align-items: center;
+    }
+    .score-card, .level-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+    }
+    .score { font-size: 28px; font-weight: 700; }
+    .progress {
+      width: 100%;
+      height: 12px;
+      background: #0b1220;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+    .bar { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width 0.2s ease; }
+    .level { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+    .level-desc { color: var(--muted); font-size: 13px; margin: 0; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 20px; }
+    @media (max-width: 900px) { .grid, .summary { grid-template-columns: 1fr; } }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px; }
+    h2 { margin: 0 0 12px 0; font-size: 16px; letter-spacing: 0.2px; }
+    ul.checklist {
+      list-style: none;
+      margin: 0; padding: 0;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+    .item {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: rgba(255,255,255,0.02);
+    }
+    input[type="checkbox"] {
+      width: 18px; height: 18px;
+      accent-color: var(--accent);
+      margin-top: 2px;
+      cursor: pointer;
+    }
+    label { cursor: pointer; }
+    .controls { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+    button, .btn {
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: #0b1220;
+      color: var(--text);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 14px;
+    }
+    button:hover, .btn:hover { background: #0c1628; }
+    footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      border-top: 1px solid var(--border);
+      background: rgba(5,10,20,0.85);
+      backdrop-filter: blur(8px);
+      padding: 10px 18px;
+    }
+    .footer-inner {
+      max-width: 980px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      color: var(--muted); font-size: 13px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: #0b1220;
+      font-weight: 600; font-size: 12px;
+      color: var(--text);
+    }
+    .hint { color: var(--muted); font-size: 12px; margin-top: 8px; }
+    .pill {
+      display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px;
+      border: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <h1>Checklist de Continuous Delivery</h1>
+      <p class="subtitle">Marque o que já está implementado. A pontuação e o nível mudam em tempo real.</p>
+      <div class="summary">
+        <div class="score-card">
+          <div>Pontos</div>
+          <div class="score"><span id="score">0</span>/<span id="total">0</span></div>
+          <div class="progress"><div id="bar" class="bar"></div></div>
+          <div class="hint">Dica: automatize deploy, padronize ambientes e separe deploy de release.</div>
+        </div>
+        <div class="level-card">
+          <div class="level">Nível do time: <span id="level-label" class="pill">Inicial</span></div>
+          <p id="level-desc" class="level-desc">Processo manual, riscos altos em deploy e pouca previsibilidade.</p>
+          <div class="controls">
+            <button id="btn-save">Salvar no navegador</button>
+            <button id="btn-load">Carregar do navegador</button>
+            <button id="btn-reset">Limpar marcações</button>
+            <button id="btn-print">Imprimir ou salvar PDF</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="grid">
+      <section class="card">
+        <h2>Automação do Deploy</h2>
+        <ul class="checklist">
+          <li class="item"><input id="c1" type="checkbox" data-points="1"/><label for="c1">Deploy com um único comando/clique (sem passos manuais críticos)</label></li>
+          <li class="item"><input id="c2" type="checkbox" data-points="1"/><label for="c2">Mesmo artefato do CI promovido entre ambientes (sem rebuilds)</label></li>
+          <li class="item"><input id="c3" type="checkbox" data-points="1"/><label for="c3">Deploys reprodutíveis e idempotentes</label></li>
+          <li class="item"><input id="c4" type="checkbox" data-points="1"/><label for="c4">Zero acesso manual a servidores durante deploy (somente via pipeline)</label></li>
+        </ul>
+      </section>
+
+      <section class="card">
+        <h2>Ambientes Consistentes</h2>
+        <ul class="checklist">
+          <li class="item"><input id="c5" type="checkbox" data-points="1"/><label for="c5">Infraestrutura como Código para provisionar ambientes</label></li>
+          <li class="item"><input id="c6" type="checkbox" data-points="1"/><label for="c6">Configurações versionadas e padronizadas</label></li>
+          <li class="item"><input id="c7" type="checkbox" data-points="1"/><label for="c7">Staging espelha produção (stack, serviços e integrações principais)</label></li>
+          <li class="item"><input id="c8" type="checkbox" data-points="1"/><label for="c8">Segredos e variáveis gerenciados por ferramenta (ex.: vault, secrets manager)</label></li>
+        </ul>
+      </section>
+
+      <section class="card">
+        <h2>Pipeline de Entrega</h2>
+        <ul class="checklist">
+          <li class="item"><input id="c9" type="checkbox" data-points="1"/><label for="c9">Artefato versionado único por commit</label></li>
+          <li class="item"><input id="c10" type="checkbox" data-points="1"/><label for="c10">Promoção por estágios: build → testes → staging → produção</label></li>
+          <li class="item"><input id="c11" type="checkbox" data-points="1"/><label for="c11">Gates de performance, segurança e contratos antes de produção</label></li>
+          <li class="item"><input id="c12" type="checkbox" data-points="1"/><label for="c12">Migrações de banco automatizadas com estratégia expand/contract</label></li>
+        </ul>
+      </section>
+
+      <section class="card">
+        <h2>Estratégias de Release</h2>
+        <ul class="checklist">
+          <li class="item"><input id="c13" type="checkbox" data-points="1"/><label for="c13">Feature flags para ativar/desativar funcionalidades em produção</label></li>
+          <li class="item"><input id="c14" type="checkbox" data-points="1"/><label for="c14">Suporte a canary/blue‑green/dark launches</label></li>
+          <li class="item"><input id="c15" type="checkbox" data-points="1"/><label for="c15">Deploy ≠ release (controle de exposição por flags/rollout progressivo)</label></li>
+          <li class="item"><input id="c16" type="checkbox" data-points="1"/><label for="c16">Aprovação manual opcional apenas para produção quando necessário</label></li>
+        </ul>
+      </section>
+
+      <section class="card">
+        <h2>Observabilidade e Segurança</h2>
+        <ul class="checklist">
+          <li class="item"><input id="c17" type="checkbox" data-points="1"/><label for="c17">Smoke tests automáticos pós‑deploy</label></li>
+          <li class="item"><input id="c18" type="checkbox" data-points="1"/><label for="c18">Monitoramento e alertas definidos por SLOs</label></li>
+          <li class="item"><input id="c19" type="checkbox" data-points="1"/><label for="c19">Rollback/Kill switch executável em &lt; 5 minutos</label></li>
+          <li class="item"><input id="c20" type="checkbox" data-points="1"/><label for="c20">Runbooks de incidentes e trilha de auditoria de mudanças</label></li>
+        </ul>
+      </section>
+    </div>
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+      <div>Checklist de Continuous Delivery - Autoavaliação</div>
+      <div><span class="badge" id="status-badge">Inicial</span></div>
+    </div>
+  </footer>
+
+  <script>
+    const LEVELS = [
+      { max: 5,  label: "Inicial",   desc: "Processo manual, riscos altos em deploy e pouca previsibilidade." },
+      { max: 11, label: "Parcial",   desc: "Automação em progresso; ainda há passos manuais e gaps de segurança/ambiente." },
+      { max: 16, label: "Bom",       desc: "Entregas frequentes e seguras; poucos passos manuais e rollback confiável." },
+      { max: 20, label: "Excelente", desc: "Pronto para Continuous Deployment; alto nível de automação e observabilidade." }
+    ];
+
+    const STORAGE_KEY = "cd-checklist-state-v2";
+
+    function updateScore() {
+      const checks = Array.from(document.querySelectorAll('input[type="checkbox"]'));
+      const total = checks.length;
+      const score = checks.reduce((sum, el) => sum + (el.checked ? Number(el.dataset.points || 1) : 0), 0);
+      document.getElementById("total").textContent = total;
+      document.getElementById("score").textContent = score;
+
+      const pct = total ? Math.round((score / total) * 100) : 0;
+      document.getElementById("bar").style.width = pct + "%";
+
+      let level = LEVELS.find(l => score <= l.max) || LEVELS[LEVELS.length - 1];
+      document.getElementById("level-label").textContent = level.label;
+      document.getElementById("level-desc").textContent = level.desc;
+      document.getElementById("status-badge").textContent = level.label;
+    }
+
+    function saveState() {
+      const checks = Array.from(document.querySelectorAll('input[type="checkbox"]'));
+      const state = checks.map(el => ({ id: el.id, checked: el.checked }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      alert("Checklist salvo no navegador.");
+    }
+
+    function loadState() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (!saved) { alert("Nenhum estado salvo encontrado."); return; }
+      try {
+        const state = JSON.parse(saved);
+        state.forEach(s => {
+          const el = document.getElementById(s.id);
+          if (el) el.checked = !!s.checked;
+        });
+        updateScore();
+        alert("Checklist carregado do navegador.");
+      } catch(e) {
+        alert("Falha ao carregar o estado salvo.");
+      }
+    }
+
+    function resetAll() {
+      if (!confirm("Limpar todas as marcações?")) return;
+      const checks = Array.from(document.querySelectorAll('input[type="checkbox"]'));
+      checks.forEach(el => el.checked = false);
+      updateScore();
+    }
+
+    function setup() {
+      document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        cb.addEventListener('change', updateScore);
+      });
+      document.getElementById("btn-save").addEventListener('click', saveState);
+      document.getElementById("btn-load").addEventListener('click', loadState);
+      document.getElementById("btn-reset").addEventListener('click', resetAll);
+      document.getElementById("btn-print").addEventListener('click', () => window.print());
+      updateScore();
+    }
+
+    document.addEventListener('DOMContentLoaded', setup);
+  </script>
+</body>
+</html>

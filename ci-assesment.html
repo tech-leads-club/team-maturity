@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Checklist de CI no GitHub - Autoavaliação</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #111827;
+      --muted: #94a3b8;
+      --text: #e5e7eb;
+      --accent: #60a5fa;
+      --accent-2: #34d399;
+      --danger: #f87171;
+      --warning: #fbbf24;
+      --ok: #4ade80;
+      --border: #1f2937;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 0 0 60px 0;
+      line-height: 1.45;
+    }
+    header {
+      padding: 28px 18px 8px 18px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0));
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .wrap { max-width: 980px; margin: 0 auto; }
+    h1 {
+      margin: 0 0 6px 0; font-size: 24px; letter-spacing: 0.2px;
+    }
+    p.subtitle { margin: 0; color: var(--muted); font-size: 14px; }
+    .summary {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin: 18px 0 8px;
+      align-items: center;
+    }
+    .score-card, .level-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+    }
+    .score {
+      font-size: 28px;
+      font-weight: 700;
+    }
+    .progress {
+      width: 100%;
+      height: 12px;
+      background: #0b1220;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+    .bar { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width 0.2s ease; }
+    .level {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .level-desc { color: var(--muted); font-size: 13px; margin: 0; }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 20px;
+    }
+    @media (max-width: 900px) {
+      .grid, .summary { grid-template-columns: 1fr; }
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+    }
+    h2 {
+      margin: 0 0 12px 0; font-size: 16px; letter-spacing: 0.2px;
+    }
+    ul.checklist {
+      list-style: none;
+      margin: 0; padding: 0;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+    .item {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: rgba(255,255,255,0.02);
+    }
+    input[type="checkbox"] {
+      width: 18px; height: 18px;
+      accent-color: var(--accent);
+      margin-top: 2px;
+      cursor: pointer;
+    }
+    label { cursor: pointer; }
+    .controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+    button, .btn {
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: #0b1220;
+      color: var(--text);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 14px;
+    }
+    button:hover, .btn:hover { background: #0c1628; }
+    footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      border-top: 1px solid var(--border);
+      background: rgba(5,10,20,0.85);
+      backdrop-filter: blur(8px);
+      padding: 10px 18px;
+    }
+    .footer-inner {
+      max-width: 980px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      color: var(--muted); font-size: 13px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: #0b1220;
+      font-weight: 600; font-size: 12px;
+      color: var(--text);
+    }
+    .hint { color: var(--muted); font-size: 12px; margin-top: 8px; }
+    .pill {
+      display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px;
+      border: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <h1>Checklist de CI no GitHub</h1>
+      <p class="subtitle">Marque o que já está implementado. A pontuação e o nível mudam em tempo real.</p>
+      <div class="summary">
+        <div class="score-card">
+          <div>Pontos</div>
+          <div class="score"><span id="score">0</span>/<span id="total">0</span></div>
+          <div class="progress"><div id="bar" class="bar"></div></div>
+          <div class="hint">Dica: mantenha os PRs pequenos e o pipeline rápido para aumentar seu score.</div>
+        </div>
+        <div class="level-card">
+          <div class="level">Nível do time: <span id="level-label" class="pill">Inicial</span></div>
+          <p id="level-desc" class="level-desc">Pipeline lento, PRs grandes e branch principal quebrando com frequência.</p>
+          <div class="controls">
+            <button id="btn-save">Salvar no navegador</button>
+            <button id="btn-load">Carregar do navegador</button>
+            <button id="btn-reset">Limpar marcações</button>
+            <button id="btn-print">Imprimir ou salvar PDF</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="grid">
+      <section class="card">
+        <h2>Branches e integração</h2>
+        <ul class="checklist">
+          <li class="item"><input id="i1" type="checkbox" data-points="1"/><label for="i1">Código integrado frequentemente ao branch main</label></li>
+          <li class="item"><input id="i2" type="checkbox" data-points="1"/><label for="i2">Pull Requests pequenos e revisados rapidamente</label></li>
+          <li class="item"><input id="i3" type="checkbox" data-points="1"/><label for="i3">Branch protegido: merge só com pipeline verde e approvals definidos</label></li>
+        </ul>
+      </section>
+
+      <section class="card">
+        <h2>Build e testes</h2>
+        <ul class="checklist">
+          <li class="item"><input id="i4" type="checkbox" data-points="1"/><label for="i4">Build totalmente automatizado</label></li>
+          <li class="item"><input id="i5" type="checkbox" data-points="1"/><label for="i5">Testes unitários rápidos e determinísticos</label></li>
+          <li class="item"><input id="i6" type="checkbox" data-points="1"/><label for="i6">Testes de integração para contratos e pontos críticos</label></li>
+        </ul>
+      </section>
+
+      <section class="card">
+        <h2>Feedback rápido</h2>
+        <ul class="checklist">
+          <li class="item"><input id="i7" type="checkbox" data-points="1"/><label for="i7">Pipeline do PR termina em minutos (commit stage ≤ 10 min)</label></li>
+          <li class="item"><input id="i8" type="checkbox" data-points="1"/><label for="i8">Notificações claras e rápidas em falha de build ou teste</label></li>
+        </ul>
+      </section>
+
+      <section class="card">
+        <h2>Qualidade contínua</h2>
+        <ul class="checklist">
+          <li class="item"><input id="i9" type="checkbox" data-points="1"/><label for="i9">Lint e formatação automáticos como gate</label></li>
+          <li class="item"><input id="i10" type="checkbox" data-points="1"/><label for="i10">Análise estática e segurança bloqueando severidades altas</label></li>
+          <li class="item"><input id="i11" type="checkbox" data-points="1"/><label for="i11">Testes de contrato ou API em serviços dependentes</label></li>
+        </ul>
+      </section>
+
+      <section class="card">
+        <h2>Confiabilidade do pipeline</h2>
+        <ul class="checklist">
+          <li class="item"><input id="i12" type="checkbox" data-points="1"/><label for="i12">Builds não são flakey e rerun não é rotina</label></li>
+          <li class="item"><input id="i13" type="checkbox" data-points="1"/><label for="i13">Artefatos reprodutíveis e versionados</label></li>
+        </ul>
+      </section>
+
+      <section class="card">
+        <h2>Saúde do branch principal</h2>
+        <ul class="checklist">
+          <li class="item"><input id="i14" type="checkbox" data-points="1"/><label for="i14">Main nunca permanece quebrado</label></li>
+          <li class="item"><input id="i15" type="checkbox" data-points="1"/><label for="i15">Feature flags para integrar código incompleto sem afetar usuários</label></li>
+          <li class="item"><input id="i16" type="checkbox" data-points="1"/><label for="i16">Versão no main sempre deployável</label></li>
+        </ul>
+      </section>
+
+      <section class="card">
+        <h2>Dados e dependências</h2>
+        <ul class="checklist">
+          <li class="item"><input id="i17" type="checkbox" data-points="1"/><label for="i17">Testes independem de dados externos instáveis e de horário real</label></li>
+          <li class="item"><input id="i18" type="checkbox" data-points="1"/><label for="i18">Serviços externos simulados por mocks ou stubs conforme o tipo de teste</label></li>
+        </ul>
+      </section>
+
+      <section class="card">
+        <h2>Observabilidade</h2>
+        <ul class="checklist">
+          <li class="item"><input id="i19" type="checkbox" data-points="1"/><label for="i19">Dashboards com métricas do pipeline e qualidade</label></li>
+          <li class="item"><input id="i20" type="checkbox" data-points="1"/><label for="i20">Alertas automáticos para PRs atrasados e main vermelho</label></li>
+        </ul>
+      </section>
+
+      <section class="card">
+        <h2>Cultura e políticas</h2>
+        <ul class="checklist">
+          <li class="item"><input id="i21" type="checkbox" data-points="1"/><label for="i21">Critério explícito de pronto para merge</label></li>
+          <li class="item"><input id="i22" type="checkbox" data-points="1"/><label for="i22">Política clara de revert aplicada sem estigma</label></li>
+        </ul>
+      </section>
+
+      <section class="card">
+        <h2>Preparação para CD</h2>
+        <ul class="checklist">
+          <li class="item"><input id="i23" type="checkbox" data-points="1"/><label for="i23">Build gera artefato implantável único por commit</label></li>
+          <li class="item"><input id="i24" type="checkbox" data-points="1"/><label for="i24">Scripts de deploy idempotentes e testados em ambiente de teste</label></li>
+          <li class="item"><input id="i25" type="checkbox" data-points="1"/><label for="i25">Smoke tests pós-deploy automatizados</label></li>
+        </ul>
+      </section>
+    </div>
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+      <div>Checklist de CI no GitHub - Autoavaliação</div>
+      <div><span class="badge" id="status-badge">Inicial</span></div>
+    </div>
+  </footer>
+
+  <script>
+    const LEVELS = [
+      { max: 7,   label: "Inicial",    desc: "Pipeline lento, PRs grandes e branch principal quebrando com frequência." },
+      { max: 14,  label: "Básico",     desc: "PRs menores, commit stage razoável, alguns gates implementados." },
+      { max: 20,  label: "Sólido",     desc: "Integração diária, análise estática e segurança, artefato único, MTTR baixo." },
+      { max: 25,  label: "Excelente",  desc: "Flakiness quase zero, paralelismo, observabilidade completa, main sempre deployável." }
+    ];
+
+    const STORAGE_KEY = "ci-checklist-state-v1";
+
+    function updateScore() {
+      const checks = Array.from(document.querySelectorAll('input[type="checkbox"]'));
+      const total = checks.length;
+      const score = checks.reduce((sum, el) => sum + (el.checked ? Number(el.dataset.points || 1) : 0), 0);
+      document.getElementById("total").textContent = total;
+      document.getElementById("score").textContent = score;
+
+      const pct = total ? Math.round((score / total) * 100) : 0;
+      document.getElementById("bar").style.width = pct + "%";
+
+      // Level
+      let level = LEVELS.find(l => score <= l.max) || LEVELS[LEVELS.length - 1];
+      document.getElementById("level-label").textContent = level.label;
+      document.getElementById("level-desc").textContent = level.desc;
+      document.getElementById("status-badge").textContent = level.label;
+    }
+
+    function saveState() {
+      const checks = Array.from(document.querySelectorAll('input[type="checkbox"]'));
+      const state = checks.map(el => ({ id: el.id, checked: el.checked }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      alert("Checklist salvo no navegador.");
+    }
+
+    function loadState() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (!saved) { alert("Nenhum estado salvo encontrado."); return; }
+      try {
+        const state = JSON.parse(saved);
+        state.forEach(s => {
+          const el = document.getElementById(s.id);
+          if (el) el.checked = !!s.checked;
+        });
+        updateScore();
+        alert("Checklist carregado do navegador.");
+      } catch(e) {
+        alert("Falha ao carregar o estado salvo.");
+      }
+    }
+
+    function resetAll() {
+      if (!confirm("Limpar todas as marcações?")) return;
+      const checks = Array.from(document.querySelectorAll('input[type="checkbox"]'));
+      checks.forEach(el => el.checked = false);
+      updateScore();
+    }
+
+    function setup() {
+      document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        cb.addEventListener('change', updateScore);
+      });
+      document.getElementById("btn-save").addEventListener('click', saveState);
+      document.getElementById("btn-load").addEventListener('click', loadState);
+      document.getElementById("btn-reset").addEventListener('click', resetAll);
+      document.getElementById("btn-print").addEventListener('click', () => window.print());
+      updateScore();
+    }
+
+    document.addEventListener('DOMContentLoaded', setup);
+  </script>
+</body>
+</html>
